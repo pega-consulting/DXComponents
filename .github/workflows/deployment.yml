@@ -34,17 +34,17 @@ jobs:
             
       - name: Install dependencies
         run: npm install --legacy-peer-deps
-        working-directory: ./Consulting
+        working-directory: ./consulting
         
       - name: Build Storybook
         run: npm run build-storybook
-        working-directory: ./Consulting
+        working-directory: ./consulting
         env:
           NODE_ENV: production
           STORYBOOK_BASE_URL: "/Pega-Consulting-Frontend-Team/"
         
       - name: Add .nojekyll file
-        run: touch ./Consulting/storybook-static/.nojekyll
+        run: touch ./consulting/storybook-static/.nojekyll
         
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -52,7 +52,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './Consulting/storybook-static'
+          path: './consulting/storybook-static'
 
   deploy:
     environment:
