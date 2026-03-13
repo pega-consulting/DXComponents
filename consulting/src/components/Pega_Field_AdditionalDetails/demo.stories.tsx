@@ -178,6 +178,12 @@ The button uses \`display: inline-flex\` so it shrinks to its label width rather
 5. On empty response or error — the modal opens with a plain text message.
 
 > **In Storybook** \`window.PCore\` is mocked per story via a decorator, so the button resolves immediately with the sample payload defined in \`mock.ts\`.
+
+---
+
+### Maintainers
+
+In case of any feedback or questions regarding implementation, please reach out to **[Sravan.Mamidi@pega.com](mailto:Sravan.Mamidi@pega.com)** / **[PCI-FrontEndTeam@pega.com](mailto:PCI-FrontEndTeam@pega.com)**.
         `
       }
     }

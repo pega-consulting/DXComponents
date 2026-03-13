@@ -34,6 +34,12 @@ A single, self-contained input component was the cleanest way to meet all three 
 - The eye icon in the trailing position of the input toggles the mask state.
 - The icon switches between an open eye (value visible) and a crossed-out eye (value hidden) to reflect the current state.
 - All standard field states are supported: \`disabled\`, \`readOnly\`, and \`required\`.
+
+---
+
+### Maintainers
+
+In case of any feedback or questions regarding implementation, please reach out to **[Sravan.Mamidi@pega.com](mailto:Sravan.Mamidi@pega.com)** / **[PCI-FrontEndTeam@pega.com](mailto:PCI-FrontEndTeam@pega.com)**.
         `.trim(),
       },
     },

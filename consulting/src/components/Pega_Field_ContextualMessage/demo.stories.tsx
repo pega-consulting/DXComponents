@@ -86,6 +86,12 @@ If the data page returns an HTML string, the component renders it safely — \`<
 
 ### Accessibility
 The alert container has \`role="alert"\` and \`aria-live="polite"\` so screen readers announce it on mount.
+
+---
+
+### Maintainers
+
+In case of any feedback or questions regarding implementation, please reach out to **[Sravan.Mamidi@pega.com](mailto:Sravan.Mamidi@pega.com)** / **[PCI-FrontEndTeam@pega.com](mailto:PCI-FrontEndTeam@pega.com)**.
         `.trim()
       }
     }

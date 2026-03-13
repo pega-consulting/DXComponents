@@ -43,6 +43,12 @@ A single, self-contained component was the most consistent way to deliver all th
 
 ### Validation
 Card numbers are validated using the **Luhn algorithm**. A green border confirms a structurally valid number; a red border indicates an invalid one. The raw digits (no spaces) are written back to the Pega property so downstream processing always receives a clean value.
+
+---
+
+### Maintainers
+
+In case of any feedback or questions regarding implementation, please reach out to **[Sravan.Mamidi@pega.com](mailto:Sravan.Mamidi@pega.com)** / **[PCI-FrontEndTeam@pega.com](mailto:PCI-FrontEndTeam@pega.com)**.
         `.trim(),
       },
     },

@@ -43,6 +43,12 @@ A single, self-contained component was the most reliable way to meet all three r
 
 ### Storybook note
 In Storybook, \`getPConnect\` does not have access to a live Pega environment. The component detects this automatically and falls back to a set of sample public video URLs so every story renders without a Pega backend.
+
+---
+
+### Maintainers
+
+In case of any feedback or questions regarding implementation, please reach out to **[Sravan.Mamidi@pega.com](mailto:Sravan.Mamidi@pega.com)** / **[PCI-FrontEndTeam@pega.com](mailto:PCI-FrontEndTeam@pega.com)**.
         `.trim(),
       },
     },
