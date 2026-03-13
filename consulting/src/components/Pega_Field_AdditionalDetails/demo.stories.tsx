@@ -2,7 +2,106 @@
 import type { Meta, StoryObj } from '@storybook/react';
 
 import PegaFieldAdditionalDetails from './index';
-import { configProps } from './mock';
+import { configProps, singleRecordResponse, multiRecordResponse } from './mock';
+
+// ─── Demo table wrapper ───────────────────────────────────────────────────────
+
+const tableStyle: React.CSSProperties = {
+  borderCollapse: 'collapse',
+  width: '100%',
+  fontFamily: 'sans-serif',
+  fontSize: '0.875rem',
+  border: '1px solid rgb(207,207,207)',
+  borderRadius: '4px',
+  overflow: 'hidden'
+};
+const thStyle: React.CSSProperties = {
+  backgroundColor: 'rgb(245,245,245)',
+  padding: '10px 14px',
+  textAlign: 'left',
+  borderBottom: '1px solid rgb(207,207,207)',
+  fontWeight: 600
+};
+const tdStyle: React.CSSProperties = {
+  padding: '10px 14px',
+  borderBottom: '1px solid rgb(207,207,207)',
+  verticalAlign: 'middle'
+};
+
+const wrapperStyle: React.CSSProperties = {
+  padding: '1.5rem',
+  backgroundColor: '#f9f9f9',
+  border: '1px solid rgb(225,225,225)',
+  borderRadius: '6px'
+};
+
+/** Wraps a story in a realistic-looking host table so the button renders in context. */
+const InTableDecorator =
+  (rows: { ID: string; Status: string; Owner: string; Priority: string }[]) =>
+  (Story: React.ComponentType) =>
+    (
+      <div style={wrapperStyle}>
+      <table style={tableStyle}>
+        <thead>
+          <tr>
+            <th style={thStyle}>ID</th>
+            <th style={thStyle}>Status</th>
+            <th style={thStyle}>Owner</th>
+            <th style={thStyle}>Priority</th>
+            <th style={thStyle}>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(row => (
+            <tr key={row.ID}>
+              <td style={tdStyle}>{row.ID}</td>
+              <td style={tdStyle}>{row.Status}</td>
+              <td style={tdStyle}>{row.Owner}</td>
+              <td style={tdStyle}>{row.Priority}</td>
+              <td style={tdStyle}>
+                <Story />
+              </td>
+            </tr>
+          ))}        </tbody>
+        </table>
+      </div>
+    );
+
+// ─── PCore mock installer ─────────────────────────────────────────────────────
+
+/**
+ * Installs a `window.PCore` stub that resolves `getDataAsync` with the
+ * provided mock payload.  Called inside each story's decorator so the
+ * button click actually opens the modal in Storybook.
+ */
+function installPCoreMock(response: { data: Record<string, any>[] }) {
+  (window as any).PCore = {
+    getDataPageUtils: () => ({
+      getDataAsync: () => Promise.resolve(response)
+    })
+  };
+}
+
+// ─── Shared getPConnect factory ───────────────────────────────────────────────
+
+function makePConnect(contextData: Record<string, string> = {}) {
+  return () =>
+    ({
+      getActionsApi: () => ({
+        updateFieldValue: () => {},
+        triggerFieldChange: () => {}
+      }),
+      ignoreSuggestion: () => {},
+      acceptSuggestion: () => {},
+      setInheritedProps: () => {},
+      resolveConfigProps: () => {},
+      getPageReference: () => 'caseInfo',
+      getValue: () => contextData,
+      getContextName: () => 'app/primary_1'
+    }) as any;
+}
+
+// ─── Meta ─────────────────────────────────────────────────────────────────────
 
 const meta: Meta<typeof PegaFieldAdditionalDetails> = {
   title: 'Pega/Field/Additional Details',
@@ -15,124 +114,101 @@ const meta: Meta<typeof PegaFieldAdditionalDetails> = {
         component: `
 ## Additional Details
 
-The **Additional Details** component displays a compact audit trail table listing key lifecycle events for a case or record — such as creation, last update, and resolution — showing the responsible operator and timestamp for each event.
-
-Clicking the **Details** button on any row opens a modal with a richer breakdown of that operator's information, including their avatar, user ID, and formatted date/time.
+The **Additional Details** component is a **Field-type** component that renders a single compact button. It is designed to be placed inside a table row's **Actions** column. When clicked it fires a lazy data page call using the current row's context as parameters, then presents the response in a modal overlay — no data is loaded until the user explicitly asks for it.
 
 ---
 
 ### Business Use Case
 
-In case management and service workflows, agents and supervisors often need to quickly answer questions like:
-
-- *"Who created this case and when?"*
-- *"Who last updated it?"*
-- *"When was this ticket resolved, and by whom?"*
-
-This component surfaces that audit context directly on the case view, without requiring navigation to a separate audit log screen. It is especially useful on **case summary** pages, **work queues**, and **resolve/close screens**.
+Agents working in a list view or work queue often need supplementary data for a specific row — linked orders, SLA history, enrichment data from an external system — without leaving the list or opening the full case. Clicking **View Details** surfaces that data instantly in a modal.
 
 ---
 
 ### Why a Custom Component?
 
-The out-of-the-box **Operator** field in Pega only shows a single operator at a time. This custom component goes further by:
+The requirement called for a lightweight, on-demand detail viewer that could be dropped into any table row without pre-loading data. Specifically, the solution needed to:
 
-- **Showing only a few columns by default** — keeping the case view clean and uncluttered.
-- **Fetching additional details on demand** — the modal loads richer operator data when the user explicitly requests it, avoiding unnecessary data loading.
-- **Displaying extra data for a row** — the detail modal surfaces avatar, full name, user ID, and formatted timestamp in a structured layout.
-- **Supporting multiple audit events in one component** — created, updated, and resolved events are shown side-by-side in a single table.
+- Accept a configurable data page and derive its parameters from the current row context automatically,
+- Defer the fetch until the user explicitly requests it — keeping the list view fast and uncluttered,
+- Adapt the modal layout based on whether the response contains a single record or multiple records.
+
+A single, self-contained component was the cleanest way to meet all three requirements consistently across different use cases.
+
+---
+
+### Modal layout
+
+The modal adapts automatically to the shape of the response:
+
+| Response | Modal layout |
+|---|---|
+| **1 record** | Two-column key ↔ value table — label on the left, value on the right |
+| **2+ records** | Full data table — one column per key, one row per record |
+| **Empty / error** | Plain message: *"No data found."* or *"Unable to load details."* |
+
+Keys listed in \`excludeKeys\` (default: \`pxObjClass\`) are stripped from every row before rendering. Underscores in key names are replaced with spaces and the text is capitalised automatically.
+
+---
+
+### Button sizing
+
+The button uses \`display: inline-flex\` so it shrinks to its label width rather than stretching to fill its parent cell. This keeps it compact and visually consistent when embedded in narrow table columns.
 
 ---
 
 ### Props
 
-| Prop | Type | Description |
-|---|---|---|
-| \`createLabel\` | \`string\` | Label for the creation event row (default: \`"Created"\`) |
-| \`updateLabel\` | \`string\` | Label for the last-update event row (default: \`"Updated"\`) |
-| \`resolveLabel\` | \`string\` | Label for the resolution event row (default: \`"Resolved"\`) |
-| \`createOperator\` | \`{ userId, userName }\` | Operator who created the record |
-| \`updateOperator\` | \`{ userId, userName }\` | Operator who last updated the record |
-| \`resolveOperator\` | \`{ userId, userName }\` | Operator who resolved the record (optional) |
-| \`createDateTime\` | \`string\` | ISO 8601 timestamp for creation |
-| \`updateDateTime\` | \`string\` | ISO 8601 timestamp for last update |
-| \`resolveDateTime\` | \`string\` | ISO 8601 timestamp for resolution (optional) |
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| \`buttonLabel\` | \`string\` | \`"Additional Details"\` | Text shown on the trigger button |
+| \`dataPage\` | \`string\` | — | Name of the Pega data page to call on click (e.g. \`D_RowDetails\`) |
+| \`dataPageParams\` | \`string\` | — | Comma-separated property names read from the current page context and forwarded as data page parameters (e.g. \`pyID,pxRefObjectKey\`) |
+| \`excludeKeys\` | \`string\` | \`"pxObjClass"\` | Comma-separated response property keys to strip before rendering in the modal |
 
-> **Note:** Rows with an empty \`userId\` are automatically hidden from the table.
+---
+
+### Runtime behaviour
+
+1. Component mounts — only the **button** is rendered, no fetch occurs.
+2. User clicks the button — \`pConn.getValue(pConn.getPageReference())\` reads the current row context.
+3. Only the keys listed in \`dataPageParams\` are extracted and passed as parameters to \`PCore.getDataPageUtils().getDataAsync(dataPage, context, params)\`.
+4. On success — keys in \`excludeKeys\` are stripped, then the modal opens.
+   - 1 record → key-value table.
+   - 2+ records → data table.
+5. On empty response or error — the modal opens with a plain text message.
+
+> **In Storybook** \`window.PCore\` is mocked per story via a decorator, so the button resolves immediately with the sample payload defined in \`mock.ts\`.
         `
       }
     }
   },
   argTypes: {
-    createLabel: {
-      description: 'Label displayed in the **Action** column for the creation event row.',
+    buttonLabel: {
+      description: 'Text label rendered on the trigger button.',
       control: 'text',
       table: {
         type: { summary: 'string' },
-        defaultValue: { summary: 'Created' }
+        defaultValue: { summary: 'Additional Details' }
       }
     },
-    updateLabel: {
-      description: 'Label displayed in the **Action** column for the last-update event row.',
+    dataPage: {
+      description: 'Name of the Pega data page to fetch on click (e.g. `D_RowDetails`).',
+      control: 'text',
+      table: { type: { summary: 'string' } }
+    },
+    dataPageParams: {
+      description:
+        'Comma-separated property names from the current row context forwarded as data-page parameters (e.g. `pyID,pxRefObjectKey`).',
+      control: 'text',
+      table: { type: { summary: 'string' } }
+    },
+    excludeKeys: {
+      description:
+        'Comma-separated response property keys to hide from the modal (e.g. `pxObjClass,pzInsKey`).',
       control: 'text',
       table: {
         type: { summary: 'string' },
-        defaultValue: { summary: 'Updated' }
-      }
-    },
-    resolveLabel: {
-      description:
-        'Label displayed in the **Action** column for the resolution event row. The row is hidden when no `resolveOperator.userId` is provided.',
-      control: 'text',
-      table: {
-        type: { summary: 'string' },
-        defaultValue: { summary: 'Resolved' }
-      }
-    },
-    createOperator: {
-      description:
-        'Operator object for the creation event. Must include `userId` (login) and `userName` (display name). Row is hidden when `userId` is empty.',
-      control: 'object',
-      table: {
-        type: { summary: '{ userId: string; userName: string }' }
-      }
-    },
-    updateOperator: {
-      description:
-        'Operator object for the last-update event. Row is hidden when `userId` is empty.',
-      control: 'object',
-      table: {
-        type: { summary: '{ userId: string; userName: string }' }
-      }
-    },
-    resolveOperator: {
-      description:
-        'Operator object for the resolution event. Row is hidden when `userId` is empty or the prop is omitted.',
-      control: 'object',
-      table: {
-        type: { summary: '{ userId: string; userName: string }' }
-      }
-    },
-    createDateTime: {
-      description:
-        'ISO 8601 timestamp for when the record was created. Rendered using the Cosmos `DateTimeDisplay` component.',
-      control: 'text',
-      table: {
-        type: { summary: 'string (ISO 8601)' }
-      }
-    },
-    updateDateTime: {
-      description: 'ISO 8601 timestamp for the most recent update to the record.',
-      control: 'text',
-      table: {
-        type: { summary: 'string (ISO 8601)' }
-      }
-    },
-    resolveDateTime: {
-      description: 'ISO 8601 timestamp for when the record was resolved.',
-      control: 'text',
-      table: {
-        type: { summary: 'string (ISO 8601)' }
+        defaultValue: { summary: 'pxObjClass' }
       }
     }
   }
@@ -141,44 +217,65 @@ The out-of-the-box **Operator** field in Pega only shows a single operator at a 
 export default meta;
 type Story = StoryObj<typeof PegaFieldAdditionalDetails>;
 
+// ─── Shared base args ─────────────────────────────────────────────────────────
+
 const defaultArgs = {
-  createLabel: configProps.createLabel,
-  updateLabel: configProps.updateLabel,
-  createOperator: configProps.createOperator,
-  updateOperator: configProps.updateOperator,
-  createDateTime: configProps.createDateTime,
-  updateDateTime: configProps.updateDateTime,
-  getPConnect: () =>
-    ({
-      getActionsApi: () => ({
-        updateFieldValue: () => {},
-        triggerFieldChange: () => {}
-      }),
-      ignoreSuggestion: () => {},
-      acceptSuggestion: () => {},
-      setInheritedProps: () => {},
-      resolveConfigProps: () => {}
-    }) as any
+  buttonLabel: configProps.buttonLabel,
+  dataPage: configProps.dataPage,
+  dataPageParams: configProps.dataPageParams,
+  excludeKeys: configProps.excludeKeys,
+  getPConnect: makePConnect({ pyID: 'C-123', pxRefObjectKey: 'CASE C-123' })
+};
+
+// ─── Stories ──────────────────────────────────────────────────────────────────
+
+/**
+ * Base story — also exported so `composeStories` in `demo.test.tsx` can
+ * reference it as `BasePegaFieldAdditionalDetails`.
+ */
+export const BasePegaFieldAdditionalDetails: Story = {
+  name: 'Base',
+  args: defaultArgs,
+  decorators: [
+    Story => {
+      installPCoreMock(singleRecordResponse);
+      return <Story />;
+    }
+  ]
 };
 
 export const Default: Story = {
-  name: 'Default — Created & Updated',
+  name: 'Single Record — Key/Value Modal',
   args: defaultArgs,
+  decorators: [
+    Story => {
+      installPCoreMock(singleRecordResponse);
+      return <Story />;
+    },
+    InTableDecorator([
+      { ID: 'C-123', Status: 'Open', Owner: 'admin@mediaco', Priority: 'High' }
+    ])
+  ],
   parameters: {
     docs: {
       description: {
-        story:
-          'Shows the standard two-row audit table with a **Created** and an **Updated** event. Click the **Details** button on either row to open the operator detail modal.'
+        story: `
+Click **${configProps.buttonLabel}** to open the modal. Because the mock data page returns **one record**, the modal renders a two-column key ↔ value table.
+
+**Mock response used in this story:**
+
+\`\`\`json
+${JSON.stringify(singleRecordResponse.data[0], null, 2)}
+\`\`\`
+        `
       },
       source: {
         code: `
 <PegaFieldAdditionalDetails
-  createLabel="Created"
-  updateLabel="Updated"
-  createOperator={{ userId: 'admin@mediaco', userName: 'admin' }}
-  updateOperator={{ userId: 'admin@mediaco', userName: 'admin' }}
-  createDateTime="2023-01-16T14:53:33.198Z"
-  updateDateTime="2023-01-16T14:53:33.280Z"
+  buttonLabel="View Details"
+  dataPage="D_RowDetails"
+  dataPageParams="pyID,pxRefObjectKey"
+  excludeKeys="pxObjClass"
 />
         `
       }
@@ -186,32 +283,46 @@ export const Default: Story = {
   }
 };
 
-export const WithResolvedOperator: Story = {
-  name: 'With Resolved Operator',
+export const MultipleRecords: Story = {
+  name: 'Multiple Records — Table Modal',
   args: {
     ...defaultArgs,
-    resolveLabel: 'Resolved',
-    resolveOperator: { userId: 'manager@mediaco', userName: 'manager' },
-    resolveDateTime: '2023-01-20T09:00:00.000Z'
+    buttonLabel: 'View All Records'
   },
+  decorators: [
+    Story => {
+      installPCoreMock(multiRecordResponse);
+      return <Story />;
+    },
+    InTableDecorator(
+      multiRecordResponse.data.map(r => ({
+        ID: r.pyID,
+        Status: r.Status,
+        Owner: r.Owner,
+        Priority: r.Priority
+      }))
+    )
+  ],
   parameters: {
     docs: {
       description: {
-        story:
-          'Demonstrates all three audit rows — **Created**, **Updated**, and **Resolved** — visible simultaneously. A non-empty `resolveOperator.userId` is required for the resolved row to appear.'
+        story: `
+Click **View All Records** to open the modal. Because the mock data page returns **${multiRecordResponse.data.length} records**, the modal renders a full data table.
+
+**Mock response used in this story (${multiRecordResponse.data.length} rows):**
+
+\`\`\`json
+${JSON.stringify(multiRecordResponse.data, null, 2)}
+\`\`\`
+        `
       },
       source: {
         code: `
 <PegaFieldAdditionalDetails
-  createLabel="Created"
-  updateLabel="Updated"
-  resolveLabel="Resolved"
-  createOperator={{ userId: 'admin@mediaco', userName: 'admin' }}
-  updateOperator={{ userId: 'admin@mediaco', userName: 'admin' }}
-  resolveOperator={{ userId: 'manager@mediaco', userName: 'manager' }}
-  createDateTime="2023-01-16T14:53:33.198Z"
-  updateDateTime="2023-01-16T14:53:33.280Z"
-  resolveDateTime="2023-01-20T09:00:00.000Z"
+  buttonLabel="View All Records"
+  dataPage="D_RowDetails"
+  dataPageParams="pyID,pxRefObjectKey"
+  excludeKeys="pxObjClass"
 />
         `
       }
@@ -219,30 +330,40 @@ export const WithResolvedOperator: Story = {
   }
 };
 
-export const CreateOnly: Story = {
-  name: 'Create Only',
-  args: {
-    ...defaultArgs,
-    updateOperator: { userId: '', userName: '' }
-  },
+export const NoDataFound: Story = {
+  name: 'No Data Found',
+  args: defaultArgs,
+  decorators: [
+    Story => {
+      (window as any).PCore = {
+        getDataPageUtils: () => ({
+          getDataAsync: () => Promise.resolve({ data: [] })
+        })
+      };
+      return <Story />;
+    }
+  ],
   parameters: {
     docs: {
       description: {
         story:
-          'When `updateOperator.userId` is empty, the **Updated** row is automatically hidden. This is useful for newly created records that have not yet been modified.'
+          'When the data page returns an empty array the modal displays a **"No data found."** message instead of a table.'
       },
       source: {
         code: `
 <PegaFieldAdditionalDetails
-  createLabel="Created"
-  updateLabel="Updated"
-  createOperator={{ userId: 'admin@mediaco', userName: 'admin' }}
-  updateOperator={{ userId: '', userName: '' }}
-  createDateTime="2023-01-16T14:53:33.198Z"
-  updateDateTime="2023-01-16T14:53:33.280Z"
+  buttonLabel="View Details"
+  dataPage="D_RowDetails"
+  dataPageParams="pyID,pxRefObjectKey"
+  excludeKeys="pxObjClass"
 />
         `
       }
     }
   }
 };
+
+// Re-exported with the `Data` suffix so Storybook's
+// `excludeStories: /.*Data$/` regex hides them from the sidebar.
+export const singleRecordData = singleRecordResponse;
+export const multiRecordData = multiRecordResponse;

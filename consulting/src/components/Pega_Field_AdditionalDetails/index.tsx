@@ -1,158 +1,193 @@
-
-import { useState } from 'react';
-import {
-  Avatar,
-  Button,
-  DateTimeDisplay,
-  FieldValueList,
-  Flex,
-  Modal,
-  Table,
-  Text,
-  withConfiguration
-} from '@pega/cosmos-react-core';
+import { Button, Modal, useModalManager, withConfiguration } from '@pega/cosmos-react-core';
 
 import type { PConnFieldProps } from '../shared/PConnProps';
+import '../shared/create-nonce';
 
 import StyledPegaFieldAdditionalDetailsWrapper from './styles';
 
 // interface for props
 interface PegaFieldAdditionalDetailsProps extends PConnFieldProps {
-  createLabel: string;
-  updateLabel: string;
-  resolveLabel: string;
-  createOperator: { userId: string; userName: string };
-  updateOperator: { userId: string; userName: string };
-  resolveOperator: { userId: string; userName: string };
-  createDateTime: string;
-  updateDateTime: string;
-  resolveDateTime: string;
-  hideLabel: boolean;
+  /** Label shown on the trigger button. */
+  buttonLabel: string;
+  /** Name of the Pega data page to call (e.g. `D_RowDetails`). */
+  dataPage: string;
+  /**
+   * Comma-separated list of property names from the current page context to pass as
+   * data page parameters (e.g. `pyID,pxRefObjectKey`).
+   */
+  dataPageParams: string;
+  /**
+   * Optional comma-separated list of property keys to exclude from the modal display
+   * (e.g. `pxObjClass`). Applies to both single-record and multi-record responses.
+   */
+  excludeKeys?: string;
 }
 
-interface AuditRow {
-  id: string;
-  action: string;
-  operator: string;
-  userId: string;
-  dateTime?: string;
+// ─── Key-value display for a single record ───────────────────────────────────
+
+const KeyValueDisplay = ({ record }: { record: Record<string, any> }) => (
+  <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+    <tbody>
+      {Object.entries(record).map(([key, value]) => (
+        <tr key={key}>
+          <td
+            style={{
+              padding: '10px 14px',
+              fontWeight: 600,
+              textTransform: 'capitalize',
+              borderBottom: '0.5px solid rgb(207,207,207)',
+              whiteSpace: 'nowrap',
+              width: '40%'
+            }}
+          >
+            {key.replace(/_/g, ' ')}
+          </td>
+          <td
+            style={{
+              padding: '10px 14px',
+              borderBottom: '0.5px solid rgb(207,207,207)'
+            }}
+          >
+            {String(value ?? '—')}
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+);
+
+// ─── Table display for multiple records ──────────────────────────────────────
+
+const RecordTable = ({ records }: { records: Record<string, any>[] }) => {
+  const rawKeys = Object.keys(records[0] || {});
+  return (
+    <table style={{ borderCollapse: 'collapse', width: '100%', border: '0.5px solid rgb(207,207,207)' }}>
+      <thead>
+        <tr>
+          {rawKeys.map(key => (
+            <th
+              key={key}
+              style={{
+                backgroundColor: 'rgb(245,245,245)',
+                padding: '10px',
+                textAlign: 'left',
+                textTransform: 'capitalize',
+                borderBottom: '0.5px solid rgb(207,207,207)'
+              }}
+            >
+              {key.replace(/_/g, ' ')}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {records.map((row, i) => (
+          <tr key={i}>
+            {rawKeys.map(key => (
+              <td
+                key={key}
+                style={{ borderBottom: '0.5px solid rgb(207,207,207)', padding: '14px 10px' }}
+              >
+                {String(row[key] ?? '—')}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+};
+
+// ─── Modal content ────────────────────────────────────────────────────────────
+
+const DetailsModal = ({ data }: { data: Record<string, any>[] | string }) => {
+  if (typeof data === 'string') {
+    return (
+      <Modal heading='Additional Details' autoWidth>
+        <p style={{ padding: '1rem' }}>{data}</p>
+      </Modal>
+    );
+  }
+
+  return (
+    <Modal
+      heading='Additional Details'
+      autoWidth
+      style={{ minWidth: '600px', maxWidth: '1200px' } as React.CSSProperties}
+    >
+      {data.length === 1 ? (
+        <KeyValueDisplay record={data[0]} />
+      ) : (
+        <RecordTable records={data} />
+      )}
+    </Modal>
+  );
+};
+
+// ─── Helper: strip excluded keys from every record ───────────────────────────
+
+function stripKeys(records: Record<string, any>[], excluded: string[]): Record<string, any>[] {
+  if (!excluded.length) return records;
+  return records.map(row => {
+    const cleaned = { ...row };
+    excluded.forEach(k => delete cleaned[k]);
+    return cleaned;
+  });
 }
+
+// ─── Helper: build data page params from current page context ─────────────────
+
+async function fetchDataPageResults(
+  pConn: any,
+  dataPage: string,
+  dataPageParams: string
+): Promise<Record<string, any>[] | string> {
+  const currentContext: Record<string, any> = pConn.getValue(pConn.getPageReference()) ?? {};
+  const paramKeys = dataPageParams.split(',').map(k => k.trim()).filter(Boolean);
+
+  const params = paramKeys.reduce<Record<string, any>>((acc, key) => {
+    if (key in currentContext) acc[key] = currentContext[key];
+    return acc;
+  }, {});
+
+  const context = pConn.getContextName();
+  const PCore = (window as any).PCore;
+
+  try {
+    const result = await PCore.getDataPageUtils().getDataAsync(dataPage, context, params);
+    if (result?.data?.length) return result.data;
+    return 'No data found.';
+  } catch (err) {
+    console.error('AdditionalDetails: data page fetch failed —', err);
+    return 'Unable to load details.';
+  }
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 function PegaFieldAdditionalDetails(props: PegaFieldAdditionalDetailsProps) {
   const {
-    createLabel = 'Created',
-    updateLabel = 'Updated',
-    resolveLabel = 'Resolved',
-    createOperator,
-    updateOperator,
-    resolveOperator,
-    createDateTime,
-    updateDateTime,
-    resolveDateTime
+    getPConnect,
+    buttonLabel = 'Additional Details',
+    dataPage = '',
+    dataPageParams = '',
+    excludeKeys = 'pxObjClass'
   } = props;
 
-  const [selectedRow, setSelectedRow] = useState<AuditRow | null>(null);
+  const { create } = useModalManager();
+  const pConn = getPConnect();
 
-  const allRows: (AuditRow | null)[] = [
-    createOperator?.userId
-      ? {
-          id: 'create',
-          action: createLabel,
-          operator: createOperator.userName,
-          userId: createOperator.userId,
-          dateTime: createDateTime
-        }
-      : null,
-    updateOperator?.userId
-      ? {
-          id: 'update',
-          action: updateLabel,
-          operator: updateOperator.userName,
-          userId: updateOperator.userId,
-          dateTime: updateDateTime
-        }
-      : null,
-    resolveOperator?.userId
-      ? {
-          id: 'resolve',
-          action: resolveLabel,
-          operator: resolveOperator.userName,
-          userId: resolveOperator.userId,
-          dateTime: resolveDateTime
-        }
-      : null
-  ];
-  const rows: AuditRow[] = allRows.filter((row): row is AuditRow => row !== null);
+  const excluded = excludeKeys.split(',').map(k => k.trim()).filter(Boolean);
 
-  const columns = [
-    { label: 'Action', renderer: 'action' as keyof AuditRow },
-    { label: 'Operator', renderer: 'operator' as keyof AuditRow },
-    { label: 'User ID', renderer: 'userId' as keyof AuditRow },
-    {
-      label: 'Date & Time',
-      renderer: ({ dateTime }: AuditRow) =>
-        dateTime ? (
-          <DateTimeDisplay value={dateTime} variant='datetime' format='long' />
-        ) : (
-          <span>—</span>
-        )
-    },
-    {
-      label: '',
-      renderer: (row: AuditRow) => (
-        <Button variant='link' compact onClick={() => setSelectedRow(row)}>
-          Details
-        </Button>
-      )
-    }
-  ];
+  async function handleClick() {
+    const raw = await fetchDataPageResults(pConn, dataPage, dataPageParams);
+    const data = typeof raw === 'string' ? raw : stripKeys(raw, excluded);
+    create(DetailsModal, { data });
+  }
 
   return (
     <StyledPegaFieldAdditionalDetailsWrapper>
-      <Table<AuditRow>
-        title='Audit Details'
-        columns={columns}
-        data={rows}
-        hoverHighlight
-      />
-
-      {selectedRow && (
-        <Modal
-          heading={`${selectedRow.action} — Operator Details`}
-          actions={
-            <Button variant='secondary' onClick={() => setSelectedRow(null)}>
-              Close
-            </Button>
-          }
-          onRequestDismiss={() => setSelectedRow(null)}
-        >
-          <Flex container={{ direction: 'column', gap: 2 }}>
-            <Flex container={{ direction: 'row', alignItems: 'center', gap: 2 }}>
-              <Avatar name={selectedRow.operator} size='l' />
-              <Text variant='h3'>{selectedRow.operator}</Text>
-            </Flex>
-            <FieldValueList
-              fields={[
-                { id: 'action', name: 'Action', value: selectedRow.action },
-                { id: 'userId', name: 'User ID', value: selectedRow.userId },
-                {
-                  id: 'dateTime',
-                  name: 'Date & Time',
-                  value: selectedRow.dateTime ? (
-                    <DateTimeDisplay
-                      value={selectedRow.dateTime}
-                      variant='datetime'
-                      format='long'
-                    />
-                  ) : (
-                    <span>—</span>
-                  )
-                }
-              ]}
-            />
-          </Flex>
-        </Modal>
-      )}
+      <Button onClick={handleClick}>{buttonLabel}</Button>
     </StyledPegaFieldAdditionalDetailsWrapper>
   );
 }

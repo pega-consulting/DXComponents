@@ -1,43 +1,38 @@
 {
   "name": "Pega_Field_AdditionalDetails",
   "label": "Additional Details",
-  "description": "Additional Details",
+  "description": "A button that, when clicked, fetches data from a Pega data page using the current row context as parameters and displays the result in a modal — either as a key-value table (single record) or a data table (multiple records).",
   "organization": "Pega",
   "version": "0.0.1",
   "library": "Field",
   "componentKey": "Pega_Field_AdditionalDetails",
-  "type": "Widget",
-  "subtype": ["PAGE","CASE"],
+  "type": "Field",
+  "subtype": ["PAGE", "CASE"],
   "subtypeLabel": "PAGE and CASE",
   "icon": "OneColumnPage.svg",
-   "properties": [
+  "properties": [
     {
-      "name": "title",
-      "label": "Label value",
+      "name": "buttonLabel",
+      "label": "Button label",
+      "format": "TEXT",
+      "defaultValue": "Additional Details"
+    },
+    {
+      "name": "dataPage",
+      "label": "Data page",
       "format": "TEXT"
     },
     {
-      "format": "SELECT",
-      "label": "Usage",
-      "name": "label",
-      "defaultValue": "Create operator",
-      "localize": true,
-      "source": [
-        {
-          "key": "Create operator",
-          "value": "Create operator"
-        },
-        {
-          "key": "Update operator",
-          "value": "Update operator"
-        },
-        {
-          "key": "Resolve operator",
-          "value": "Resolve operator"
-        }
-      ]
+      "name": "dataPageParams",
+      "label": "Data page parameters",
+      "format": "TEXT"
     },
-
+    {
+      "name": "excludeKeys",
+      "label": "Exclude keys",
+      "format": "TEXT",
+      "defaultValue": "pxObjClass"
+    },
     {
       "label": "Conditions",
       "format": "GROUP",
@@ -51,16 +46,9 @@
     }
   ],
   "defaultConfig": {
-    "label": "Create operator",
-    "title": "Create operator",
-    "createLabel": "@L Created",
-    "updateLabel": "@L Updated",
-    "createOperator": "@USER .pxCreateOperator",
-    "updateOperator": "@USER .pxUpdateOperator",
-    "createDateTime": "@P .pxCreateDateTime",
-    "updateDateTime": "@P .pxUpdateDateTime",
-    "resolveLabel": "@L Resolved",
-    "resolveOperator": "@USER .pyResolvedUserID",
-    "resolveDateTime": "@P .pyResolvedTimestamp"
+    "buttonLabel": "Additional Details",
+    "dataPage": "",
+    "dataPageParams": "",
+    "excludeKeys": "pxObjClass"
   }
 }

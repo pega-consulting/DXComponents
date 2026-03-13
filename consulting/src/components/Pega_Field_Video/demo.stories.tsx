@@ -4,8 +4,6 @@ import PegaFieldVideo from './index';
 import {
   configProps,
   configPropsAutoplay,
-  configPropsResponsive,
-  configPropsWithDataPage,
   configPropsBase64
 } from './mock';
 
@@ -29,7 +27,13 @@ This component is used to display a video wherever one is needed within the appl
 - **CSR instructions** — Customer Service Representatives can be shown specific instructional videos relevant to the case or task they are currently handling, reducing training overhead and errors.
 
 ### Why a custom component?
-The component is required because Pega does not provide a native video player widget out of the box. Wherever a video needs to be surfaced — whether on a dashboard, a case view, or a portal page — this component provides a consistent, configurable player that integrates cleanly with the Pega data page pattern.
+The requirement called for a video player that integrates cleanly with the Pega data page pattern and can be dropped into any dashboard, or portal page without additional configuration. Specifically, the solution needed to:
+
+- Accept its video source from a Pega data page — either as a direct URL or a Base64-encoded string — so the content can be managed and updated through the platform without code changes.
+- Support configurable playback behaviour (autoplay, mute, loop) to suit different contexts, from silent background reels to interactive instructional clips.
+- Render consistently across all placement contexts — dashboards, case views, and portal pages — with a predictable, responsive layout.
+
+A single, self-contained component was the most reliable way to meet all three requirements while keeping the integration surface minimal.
 
 ### Data source modes
 | Mode | \`isBase64\` | Description |
@@ -155,6 +159,7 @@ export const Default: Story = {
   args: {
     ...configProps,
     getPConnect: basePConnect as any,
+    videoSource: 'https://www.w3schools.com/html/mov_bbb.mp4',
     autoplay: true,
     muted: true
   }
@@ -180,76 +185,8 @@ export const Autoplay: Story = {
   },
   args: {
     ...configPropsAutoplay,
-    getPConnect: basePConnect as any
-  }
-};
-
-export const Responsive: Story = {
-  name: 'Responsive',
-  parameters: {
-    docs: {
-      description: {
-        story: 'Width set to `100%` and height to `auto` so the player scales fluidly with its container. Recommended for dashboard tiles or any layout where the available width varies.',
-      },
-      source: {
-        code: `<PegaFieldVideo
-  getPConnect={getPConnect}
-  datapage="D_VideoData"
-  datapageparams="videoId:responsive-video"
-  width="100%"
-  height="auto"
-/>`,
-      },
-    },
-  },
-  args: {
-    ...configPropsResponsive,
-    getPConnect: basePConnect as any
-  }
-};
-
-export const Loop: Story = {
-  name: 'Loop',
-  parameters: {
-    docs: {
-      description: {
-        story: 'The video restarts automatically when it ends. Useful for short instructional clips or ambient showcase videos that should play continuously without user intervention.',
-      },
-      source: {
-        code: `<PegaFieldVideo
-  getPConnect={getPConnect}
-  datapage="D_VideoData"
-  loop={true}
-/>`,
-      },
-    },
-  },
-  args: {
-    ...configProps,
-    loop: true,
-    getPConnect: basePConnect as any
-  }
-};
-
-export const WithDataPage: Story = {
-  name: 'With data page',
-  parameters: {
-    docs: {
-      description: {
-        story: 'Explicit `datapage` and `datapageparams` props configured. In a live Pega environment, the component calls this data page at runtime and uses the returned URL as the video source. In Storybook, a fallback URL is used automatically.',
-      },
-      source: {
-        code: `<PegaFieldVideo
-  getPConnect={getPConnect}
-  datapage="D_VideoData"
-  datapageparams="videoId:default-video"
-/>`,
-      },
-    },
-  },
-  args: {
-    ...configPropsWithDataPage,
-    getPConnect: basePConnect as any
+    getPConnect: basePConnect as any,
+    videoSource: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
   }
 };
 

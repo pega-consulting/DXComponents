@@ -21,7 +21,13 @@ const meta: Meta<typeof PegaFieldMaskedwithEyeIcon> = {
 This component is used to check the value entered by the user in sensitive fields. It is particularly useful when the value needs to remain hidden during entry — such as a password, PIN, or secret key — but the user still needs the ability to verify what they typed. Clicking the eye icon toggles the mask on and off without leaving the field, so the user can confirm their input at any point without retyping it.
 
 ### Why a custom component?
-The component is required because we want to mask sensitive data while still giving the user the ability to cross-check what was entered. A standard Pega text field offers no built-in mask toggle — it is either always visible or always hidden. This component closes that gap by combining a standard editable input with an inline eye icon button, keeping sensitive values protected by default while remaining fully verifiable by the user at their discretion.
+The requirement called for a sensitive input field that keeps its value hidden by default while still giving the user full control to verify what they typed — without leaving the field or retyping. Specifically, the solution needed to:
+
+- Start in a masked state by default, protecting sensitive values from casual observation.
+- Allow the user to toggle the mask on and off at will via an inline eye icon, so they can cross-check their entry at any point.
+- Support all standard field states — \`disabled\`, \`readOnly\`, and \`required\` — without any change in toggle behaviour.
+
+A single, self-contained input component was the cleanest way to meet all three requirements consistently.
 
 ### Behaviour
 - The field starts masked (\`defaultMasked={true}\`) or unmasked (\`defaultMasked={false}\`) depending on configuration.

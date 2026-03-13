@@ -26,10 +26,13 @@ This component is used to display a message based on user operations or as a sta
 ---
 
 ### Why a custom component?
-This component exists outside of the Pega out-of-the-box (OOTB) alert components for two reasons:
+The requirement called for an inline notification banner that feels distinct from system-generated alerts and aligns with the application's own design language. Specifically, the solution needed to:
 
-- **Distinct visual style** — it provides tighter control over layout, iconography, and colour, aligning with the application's design language rather than the default Pega theme.
-- **Avoiding confusion with system messages** — OOTB alerts are also used for system-generated notifications (validation errors, server messages). Using a separate custom component keeps user-facing contextual messages visually distinct and prevents them from being mistaken for system feedback.
+- Provide tighter control over layout, iconography, and colour so the banner matches the application's visual identity rather than inheriting the default platform theme.
+- Keep user-facing contextual messages visually separate from system notifications — such as validation errors or server responses — so users can immediately distinguish between the two without ambiguity.
+- Fetch its message body from a configurable data page at runtime, making the content fully manageable through the Pega platform without requiring code changes.
+
+A single, self-contained component with four clearly defined variants was the cleanest way to meet all three requirements consistently.
 
 ---
 
@@ -67,7 +70,12 @@ Parameters in \`getDParams\` support property references using dot notation (e.g
 ---
 
 ### Storybook behaviour
-In Storybook, \`PCore\` is not available. The component detects this automatically and uses the \`storybookMessage\` prop as a realistic stand-in for the data page response, so every story renders meaningful content without a live Pega backend.
+In Storybook there is no live Pega backend, so no data page can be called. The component uses the presence of the \`storybookMessage\` prop to determine which path to take:
+
+- **\`storybookMessage\` provided** — the value is used directly as the message body, synchronously on the first render. No async fetch is attempted and no environment detection is performed.
+- **\`storybookMessage\` omitted** — the component falls through to the normal data page path (\`getPageDataAsync\`), which is the behaviour in a live Pega environment.
+
+This means the branching is entirely prop-driven and deterministic, with no dependency on \`window.PCore\` being present at module-load time.
 
 ---
 
@@ -78,9 +86,9 @@ If the data page returns an HTML string, the component renders it safely — \`<
 
 ### Accessibility
 The alert container has \`role="alert"\` and \`aria-live="polite"\` so screen readers announce it on mount.
-        `.trim(),
-      },
-    },
+        `.trim()
+      }
+    }
   },
   tags: ['autodocs'],
   argTypes: {
@@ -91,29 +99,31 @@ The alert container has \`role="alert"\` and \`aria-live="polite"\` so screen re
         'Controls the icon, title colour, and semantic meaning of the alert. Each variant maps to a fixed Pega theme colour — `warning` → `#FD6000`, `info` → `#6B7280`, `reminder` → `#681FC3`, `speak` → `#00BCD4`. The icon and title colour are resolved via a switch statement; no external config object is used.',
       table: {
         type: { summary: "'warning' | 'info' | 'reminder' | 'speak'" },
-        defaultValue: { summary: 'info' },
-      },
+        defaultValue: { summary: 'info' }
+      }
     },
     title: {
       control: 'text',
       description: 'Short headline displayed in bold at the top of the alert.',
       table: {
-        type: { summary: 'string' },
-      },
+        type: { summary: 'string' }
+      }
     },
     getDPage: {
       control: 'text',
-      description: 'Name of the Pega data page that returns the alert message body (e.g. `D_AlertContent`).',
+      description:
+        'Name of the Pega data page that returns the alert message body (e.g. `D_AlertContent`).',
       table: {
-        type: { summary: 'string' },
-      },
+        type: { summary: 'string' }
+      }
     },
     getDParams: {
       control: 'text',
-      description: 'Comma-separated `key:value` parameters passed to the data page (e.g. `alertId:welcome`).',
+      description:
+        'Comma-separated `key:value` parameters passed to the data page (e.g. `alertId:welcome`).',
       table: {
-        type: { summary: 'string' },
-      },
+        type: { summary: 'string' }
+      }
     },
     responseProperty: {
       control: 'text',
@@ -121,27 +131,27 @@ The alert container has \`role="alert"\` and \`aria-live="polite"\` so screen re
         'The property name on the data page response object that contains the message text. Defaults to `message` if not specified (e.g. set to `messageText` if the data page returns `{ messageText: "..." }`).',
       table: {
         type: { summary: 'string' },
-        defaultValue: { summary: 'message' },
-      },
+        defaultValue: { summary: 'message' }
+      }
     },
     testId: {
       control: 'text',
       description: 'Value applied to the `data-testid` attribute for automated testing.',
       table: {
         type: { summary: 'string' },
-        category: 'Testing',
-      },
+        category: 'Testing'
+      }
     },
     storybookMessage: {
       control: 'text',
       description:
-        '**Storybook only.** A realistic message string used as a stand-in for the data page response when `PCore` is not available. Has no effect in a live Pega environment.',
+        '**Storybook only.** When provided, this value is used directly as the message body on the first render — no data page fetch is made and no environment detection is performed. When omitted, the component follows the normal live-Pega path and calls `getPageDataAsync`. Has no effect in a live Pega environment as long as `getDPage` is configured.',
       table: {
         type: { summary: 'string' },
-        category: 'Storybook',
-      },
-    },
-  },
+        category: 'Storybook'
+      }
+    }
+  }
 };
 
 export default meta;
@@ -151,14 +161,26 @@ const basePConnect = () => ({
   getStateProps: () => ({ value: '.ContextualMessage', hasSuggestions: false }),
   getContextName: () => 'app/primary_1',
   getActionsApi: () => ({
-    updateFieldValue: () => {/* nothing */},
-    triggerFieldChange: () => {/* nothing */}
+    updateFieldValue: () => {
+      /* nothing */
+    },
+    triggerFieldChange: () => {
+      /* nothing */
+    }
   }),
   getValue: (prop: string) => prop,
-  ignoreSuggestion: () => {/* nothing */},
-  acceptSuggestion: () => {/* nothing */},
-  setInheritedProps: () => {/* nothing */},
-  resolveConfigProps: () => {/* nothing */}
+  ignoreSuggestion: () => {
+    /* nothing */
+  },
+  acceptSuggestion: () => {
+    /* nothing */
+  },
+  setInheritedProps: () => {
+    /* nothing */
+  },
+  resolveConfigProps: () => {
+    /* nothing */
+  }
 });
 
 export const Default: Story = {
@@ -166,7 +188,8 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'The default state using the `info` variant. A good starting point when you need a neutral, non-urgent message. The message body is loaded from the configured data page at runtime.',
+        story:
+          'The default state using the `info` variant. A good starting point when you need a neutral, non-urgent message. The message body is loaded from the configured data page at runtime.'
       },
       source: {
         code: `<PegaFieldContextualMessage
@@ -175,9 +198,9 @@ export const Default: Story = {
   title="Information"
   getDPage="D_AlertContent"
   getDParams="alertId:welcome"
-/>`,
-      },
-    },
+/>`
+      }
+    }
   },
   args: {
     variant: configProps.variant as any,
@@ -186,11 +209,10 @@ export const Default: Story = {
     getDParams: configProps.getDParams,
     responseProperty: configProps.responseProperty,
     testId: configProps.testId,
-    storybookMessage: 'Welcome! Please review your account details and complete any outstanding tasks before proceeding.',
+    storybookMessage:
+      'Welcome! Please review your account details and complete any outstanding tasks before proceeding.'
   },
-  render: (args: any) => (
-    <PegaFieldContextualMessage getPConnect={basePConnect} {...args} />
-  )
+  render: (args: any) => <PegaFieldContextualMessage getPConnect={basePConnect} {...args} />
 };
 
 export const Reminder: Story = {
@@ -198,7 +220,8 @@ export const Reminder: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Use `reminder` to prompt the user to take a follow-up action. The purple icon draws attention to something that still needs doing.',
+        story:
+          'Use `reminder` to prompt the user to take a follow-up action. The purple icon draws attention to something that still needs doing.'
       },
       source: {
         code: `<PegaFieldContextualMessage
@@ -207,9 +230,9 @@ export const Reminder: Story = {
   title="Action Required"
   getDPage="D_AlertContent"
   getDParams="alertId:action-required"
-/>`,
-      },
-    },
+/>`
+      }
+    }
   },
   args: {
     variant: 'reminder',
@@ -218,11 +241,10 @@ export const Reminder: Story = {
     getDParams: 'alertId:action-required',
     responseProperty: 'message',
     testId: 'alert-reminder',
-    storybookMessage: 'Your identity verification is incomplete. Please upload a valid government-issued ID to continue.',
+    storybookMessage:
+      'Your identity verification is incomplete. Please upload a valid government-issued ID to continue.'
   },
-  render: (args: any) => (
-    <PegaFieldContextualMessage getPConnect={basePConnect} {...args} />
-  )
+  render: (args: any) => <PegaFieldContextualMessage getPConnect={basePConnect} {...args} />
 };
 
 export const Info: Story = {
@@ -230,7 +252,8 @@ export const Info: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Use `info` for neutral tips, guidance, or background context that does not require action.',
+        story:
+          'Use `info` for neutral tips, guidance, or background context that does not require action.'
       },
       source: {
         code: `<PegaFieldContextualMessage
@@ -239,9 +262,9 @@ export const Info: Story = {
   title="Did You Know?"
   getDPage="D_AlertContent"
   getDParams="alertId:info-tip"
-/>`,
-      },
-    },
+/>`
+      }
+    }
   },
   args: {
     variant: 'info',
@@ -250,11 +273,10 @@ export const Info: Story = {
     getDParams: 'alertId:info-tip',
     responseProperty: 'message',
     testId: 'alert-info',
-    storybookMessage: 'You can save your progress at any time by clicking the Save button at the bottom of the form. Your data is retained for 30 days.',
+    storybookMessage:
+      'You can save your progress at any time by clicking the Save button at the bottom of the form. Your data is retained for 30 days.'
   },
-  render: (args: any) => (
-    <PegaFieldContextualMessage getPConnect={basePConnect} {...args} />
-  )
+  render: (args: any) => <PegaFieldContextualMessage getPConnect={basePConnect} {...args} />
 };
 
 export const Warning: Story = {
@@ -262,7 +284,8 @@ export const Warning: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Use `warning` for non-blocking cautions — the user can proceed but should be aware of a potential issue.',
+        story:
+          'Use `warning` for non-blocking cautions — the user can proceed but should be aware of a potential issue.'
       },
       source: {
         code: `<PegaFieldContextualMessage
@@ -271,9 +294,9 @@ export const Warning: Story = {
   title="Please Note"
   getDPage="D_AlertContent"
   getDParams="alertId:caution"
-/>`,
-      },
-    },
+/>`
+      }
+    }
   },
   args: {
     variant: 'warning',
@@ -282,11 +305,9 @@ export const Warning: Story = {
     getDParams: 'alertId:caution',
     responseProperty: 'message',
     testId: 'alert-warning',
-    storybookMessage: 'Submitting this form will cancel your existing policy. Please ensure you have reviewed all terms before proceeding.',
+    storybookMessage: 'Do not share your personal information to the agent'
   },
-  render: (args: any) => (
-    <PegaFieldContextualMessage getPConnect={basePConnect} {...args} />
-  )
+  render: (args: any) => <PegaFieldContextualMessage getPConnect={basePConnect} {...args} />
 };
 
 export const Speak: Story = {
@@ -294,7 +315,8 @@ export const Speak: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Use `speak` for conversational guidance or operator instructions — for example, a script prompt shown to a CSR while handling a case.',
+        story:
+          'Use `speak` for conversational guidance or operator instructions — for example, a script prompt shown to a CSR while handling a case.'
       },
       source: {
         code: `<PegaFieldContextualMessage
@@ -303,9 +325,9 @@ export const Speak: Story = {
   title="Operator Guidance"
   getDPage="D_AlertContent"
   getDParams="alertId:csr-script"
-/>`,
-      },
-    },
+/>`
+      }
+    }
   },
   args: {
     variant: 'speak',
@@ -314,9 +336,8 @@ export const Speak: Story = {
     getDParams: 'alertId:csr-script',
     responseProperty: 'message',
     testId: 'alert-speak',
-    storybookMessage: 'Thank the customer for calling. Confirm their full name and date of birth before discussing any account details. Offer to escalate if the issue is unresolved within 5 minutes.',
+    storybookMessage:
+      'Thank the customer for calling. Confirm their full name and date of birth before discussing any account details. Offer to escalate if the issue is unresolved within 5 minutes.'
   },
-  render: (args: any) => (
-    <PegaFieldContextualMessage getPConnect={basePConnect} {...args} />
-  )
+  render: (args: any) => <PegaFieldContextualMessage getPConnect={basePConnect} {...args} />
 };

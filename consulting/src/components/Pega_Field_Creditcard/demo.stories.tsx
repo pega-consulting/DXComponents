@@ -23,10 +23,13 @@ As the user types, the component automatically identifies the card network, appl
 The primary purpose of this component is to validate the credit card number entered by the user. It identifies the type of credit card (Visa, Mastercard, American Express, Discover, Diners Club, JCB) and validates the number as prescribed for that network. For each supported card type, the number is formatted according to its standard grouping — for example, 4-4-4-4 digits for most cards and 4-6-5 digits for American Express.
 
 ### Why a custom component?
-This component is required for two reasons:
+The requirement called for a credit card input that goes beyond simple data capture — it needed to guide the user through entry and validate the number in real time. Specifically, the solution needed to:
 
-- **Visual distinction from a plain text field** — a standard Pega text field gives no indication that a card number is expected. This component shows the detected card network logo alongside the input, making the purpose of the field immediately clear to the user.
-- **Real-time validation instead of on-submit** — the default Pega validation cycle runs on form submission. This component runs the Luhn check on every keystroke, surfacing errors instantly with a red border rather than waiting until the user tries to submit. This reduces failed submissions and improves the overall form experience.
+- Detect the card network from the first few digits and display the corresponding logo, so the user has immediate visual confirmation that the right card type is being entered.
+- Apply network-specific digit grouping automatically (e.g. 4-4-4-4 for Visa, 4-6-5 for Amex) to make the number easier to read and verify while typing.
+- Run the Luhn algorithm on every keystroke and surface a clear pass/fail signal before the form is submitted, reducing failed submissions and improving the overall entry experience.
+
+A single, self-contained component was the most consistent way to deliver all three behaviours together.
 
 ### Supported card networks
 | Network | Pattern | Format |

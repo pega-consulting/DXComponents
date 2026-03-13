@@ -30,8 +30,11 @@ interface PegaFieldContextualMessageProps extends PConnFieldProps {
    */
   responseProperty?: string;
   /**
-   * Storybook-only: a realistic message string shown when `PCore` is not available.
-   * Has no effect in a live Pega environment.
+   * Storybook-only: when set to a **non-empty string**, this value is used directly
+   * as the message body and the data page fetch is skipped entirely.
+   * This prop is never present in a live Pega configuration, so its presence
+   * unambiguously identifies the Storybook rendering path.
+   * An empty string is treated the same as `undefined` — the data page path runs normally.
    */
   storybookMessage?: string;
 }
@@ -147,23 +150,30 @@ function PegaFieldContextualMessage(props: PegaFieldContextualMessageProps) {
     testId
   } = props;
 
-  const [message, setMessage] = useState<string>('');
+  // Storybook path: storybookMessage is a non-empty string supplied explicitly in
+  // story args. This prop is never present in a live Pega configuration, so its
+  // presence unambiguously means "render the prop value, skip the data page fetch".
+  // An empty string is treated the same as absent so a misconfigured story cannot
+  // accidentally suppress the data page call with a blank message.
+  const isStorybookMode = typeof storybookMessage === 'string' && storybookMessage.length > 0;
+
+  const [message, setMessage] = useState<string>(isStorybookMode ? storybookMessage : '');
 
   useEffect(() => {
-    if (!getDPage) return;
-
-    // Detect Storybook: PCore is not available outside a live Pega environment
-    const isStorybook = typeof window === 'undefined' || !(window as any).PCore;
-    if (isStorybook) {
-      setMessage(storybookMessage ?? `[Storybook preview — data page: ${getDPage}${getDParams ? ` | params: ${getDParams}` : ''}]`);
+    // Storybook: keep in sync when the prop changes (e.g. controls panel).
+    if (isStorybookMode) {
+      setMessage(storybookMessage);
       return;
     }
+
+    if (!getDPage) return;
 
     getDataPageResults(getPConnect, getDPage, getDParams)
       .then((data: any) => {
         setMessage(data?.[responseProperty] ?? '');
       })
       .catch(() => setMessage(''));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getPConnect, getDPage, getDParams, responseProperty, storybookMessage]);
 
   const { headingColor, icon } = getVariantConfig(variant);

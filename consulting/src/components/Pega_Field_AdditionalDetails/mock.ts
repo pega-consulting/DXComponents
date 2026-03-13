@@ -1,52 +1,52 @@
 
+/** Props used in Storybook stories. */
 export const configProps = {
-  label: 'Create operator',
-  createLabel: 'Created',
-  updateLabel: 'Updated',
-  updateDateTime: '2023-01-16T14:53:33.280Z',
-  createDateTime: '2023-01-16T14:53:33.198Z',
-  updateOperator: {
-    userId: 'admin@mediaco',
-    userName: 'admin'
-  },
-  createOperator: {
-    userId: 'admin@mediaco',
-    userName: 'admin'
-  },
-  hideLabel: true,
-  key: '_532zx1dah',
-  displayMode: 'LABELS_LEFT'
+  buttonLabel: 'View Details',
+  dataPage: 'D_RowDetails',
+  dataPageParams: 'pyID,pxRefObjectKey',
+  excludeKeys: 'pxObjClass'
 };
 
-export const operatorDetails = {
-  data: {
-    pzLoadTime: 'January 18, 2023 10:33:19 AM EST',
-    pzPageNameHash: '_pa1519192551088960pz',
-    pyOperatorInfo: {
-      pyUserName: 'french DigV2',
-      pyPosition: '',
-      pyImageInsKey: '',
-      pySkills: [
-        {
-          pySkillName: '',
-          pzIndexOwnerKey: 'DATA-ADMIN-OPERATOR-ID FRENCHTEST.DIGV2',
-          pySkillRating: 0
-        }
-      ],
-      pyReportToUserName: '',
-      pyReportTo: '',
-      pyOrganization: 'DXIL',
-      pyTitle: '',
-      pyLabel: 'frenchTest.DigV2',
-      pyEmailAddress: 'User@DigV2',
-      pyTelephone: ''
+/**
+ * A mock single-record response returned by the data page.
+ * Used in stories and tests to simulate the fetch.
+ */
+export const singleRecordResponse = {
+  data: [
+    {
+      pyID: 'C-123',
+      pxRefObjectKey: 'CASE C-123',
+      Status: 'Open',
+      Owner: 'admin@mediaco',
+      Created: '2023-01-16T14:53:33.198Z',
+      Updated: '2023-01-16T14:53:33.280Z'
     }
-  },
-  status: 200,
-  statusText: '',
-  headers: {
-    'content-length': '435',
-    'content-type': 'application/json;charset=UTF-8'
-  },
-  request: {}
+  ]
+};
+
+/**
+ * A mock multi-record response returned by the data page.
+ * Used in stories that demonstrate the table view.
+ */
+export const multiRecordResponse = {
+  data: [
+    {
+      pyID: 'C-123',
+      Status: 'Open',
+      Owner: 'admin@mediaco',
+      Priority: 'High'
+    },
+    {
+      pyID: 'C-124',
+      Status: 'Pending',
+      Owner: 'manager@mediaco',
+      Priority: 'Medium'
+    },
+    {
+      pyID: 'C-125',
+      Status: 'Resolved',
+      Owner: 'support@mediaco',
+      Priority: 'Low'
+    }
+  ]
 };
