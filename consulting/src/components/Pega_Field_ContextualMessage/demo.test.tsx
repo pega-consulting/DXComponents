@@ -5,7 +5,7 @@ import '@testing-library/jest-dom';
 
 import * as DemoStories from './demo.stories';
 
-const { Default, Urgent, Info, Warning, Success } = composeStories(DemoStories);
+const { Default, Reminder, Info, Warning, Speak } = composeStories(DemoStories);
 
 test('renders default info alert', async () => {
   render(<Default />);
@@ -13,8 +13,8 @@ test('renders default info alert', async () => {
   expect(screen.getByRole('alert')).toBeInTheDocument();
 });
 
-test('renders urgent alert with correct title', async () => {
-  render(<Urgent />);
+test('renders reminder alert with correct title', async () => {
+  render(<Reminder />);
   expect(await screen.findByText('Action Required')).toBeVisible();
 });
 
@@ -28,7 +28,7 @@ test('renders warning alert with correct title', async () => {
   expect(await screen.findByText('Please Note')).toBeVisible();
 });
 
-test('renders success alert with correct title', async () => {
-  render(<Success />);
-  expect(await screen.findByText('All Done!')).toBeVisible();
+test('renders speak alert with correct title', async () => {
+  render(<Speak />);
+  expect(await screen.findByText('Operator Guidance')).toBeVisible();
 });

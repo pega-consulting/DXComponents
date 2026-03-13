@@ -14,28 +14,54 @@
             "name": "label",
             "label": "Label value",
             "format": "TEXT"
-        },
-        {
-            "name": "placeholder",
-            "label": "Placeholder",
-            "format": "TEXT"
-        },
-        {
+        },{
+            "name": "title",
+            "label": "Title",
+            "format": "TEXT",
+            "defaultValue": "Title"
+        },{
+            "name": "variant",
+            "label": "Display as",
+            "format": "SELECT",
+            "defaultValue": "info",
+            "source": [
+                {
+                    "key": "warning",
+                    "value": "warning"
+                },
+                {
+                    "key": "info",
+                    "value": "info"
+                },
+                {
+                    "key": "reminder",
+                    "value": "reminder"
+                },
+                {
+                    "key": "speak",
+                    "value": "speak"
+                }
+            ]
+        },{
+            "name": "getDPage",
+            "label": "Data Page Name",
+            "format": "TEXT",
+            "required": true
+        },{
+            "name": "getDParams",
+            "label": "Data Page Parameters",
+            "format": "TEXT",
+            "required": true
+        },{
+            "name": "responseProperty",
+            "label": "Response Property",
+            "format": "TEXT",
+            "required": true
+        },{
             "name": "visibility",
             "label": "Visible",
             "format": "VISIBILITY"
-        },
-        {
-            "name": "disabled",
-            "label": "Disabled",
-            "format": "DISABLED"
-        },
-        {
-            "name": "required",
-            "label": "Required",
-            "format": "REQUIRED"
-        },
-        {
+        },{
             "label": "Advanced",
             "format": "GROUP",
             "collapsible": true,

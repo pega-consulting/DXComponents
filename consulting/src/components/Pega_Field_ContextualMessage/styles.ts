@@ -3,6 +3,8 @@ import styled, { css } from 'styled-components';
 
 export default styled.div(() => {
   return css`
+    width: 100%;
+    text-align: left;
     margin: 8px 0;
 
     .contextual-alert {

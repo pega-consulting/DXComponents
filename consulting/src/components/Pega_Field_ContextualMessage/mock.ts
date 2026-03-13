@@ -1,12 +1,14 @@
 
 export const configProps = {
-  type: 'info',
+  variant: 'info',
   title: 'Information',
-  message: 'This is an informational alert message.',
-  testId: 'contextual-alert-12345678'
+  getDPage: 'D_AlertContent',
+  getDParams: 'alertId:welcome',
+  responseProperty: 'message',
+  testId: 'contextual-message-12345678'
 };
 
 export const stateProps = {
-  value: '.ContextualAlert',
+  value: '.ContextualMessage',
   hasSuggestions: false
 };
